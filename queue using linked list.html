@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Queue Visualizer | DSA</title>
+<style>
+:root{
+  --blue:#052e68; --blue2:#0d63bd; --maroon:#68192a;
+  --green:#138a45; --red:#b42332; --orange:#d97706;
+  --bg:#f3f7fc; --panel:#fff; --line:#cbd8e8; --text:#16243a;
+  --muted:#64748b; --softblue:#eaf4ff; --softgreen:#edfbf2;
+  --softred:#fff0f2; --softyellow:#fff8df;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+.topbar{height:72px;background:linear-gradient(90deg,#06284e,#0b447f);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 26px;position:sticky;top:0;z-index:20;box-shadow:0 3px 12px #0002}
+.brand{font-size:24px;font-weight:800}.sub{font-size:13px;opacity:.85;margin-top:3px}
+.page-name{text-align:right;font-size:19px;font-weight:800}.author{font-size:13px;opacity:.9;margin-top:3px}
+.layout{display:flex;min-height:calc(100vh - 72px)}
+.sidebar{width:235px;background:#102c4c;color:#fff;position:sticky;top:72px;height:calc(100vh - 72px);padding:14px 9px;overflow:auto}
+.sidebar a{display:block;color:#fff;text-decoration:none;padding:11px 12px;margin:3px 0;border-radius:7px;font-size:14px}
+.sidebar a:hover,.sidebar a.active{background:#1679df}
+.main{flex:1;padding:17px;max-width:1500px}
+.section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:17px;margin-bottom:15px;box-shadow:0 3px 12px #052e6810;scroll-margin-top:88px}
+.section h2{color:var(--blue);font-size:22px;margin:0 0 8px}
+.lead{font-size:15px;line-height:1.5;margin:0 0 10px}
+.definition{padding:12px 14px;background:var(--softblue);border:1px solid #cce2f8;border-radius:7px;line-height:1.5}
+.definition strong{color:var(--blue)}
+.ticket-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:15px;align-items:center;margin-top:12px}
+.people{display:flex;justify-content:center;align-items:end;gap:13px;height:115px}
+.person{width:62px;text-align:center;font-size:11px;font-weight:800;position:relative}.person-photo{width:52px;height:72px;border-radius:9px;object-fit:cover;display:block;margin:0 auto 3px;border:2px solid #fff;box-shadow:0 2px 7px #0002}.person-label{font-weight:900;color:var(--blue)}
+.op-result{margin-top:8px;padding:9px 12px;border-radius:6px;background:#edfbf2;border:1px solid #c8ead5;color:#126c39;font-weight:800;min-height:38px}
+.guide-controls select{width:150px}
+.operation-help{margin-top:8px;padding:9px 12px;background:#fff;border:1px solid var(--line);border-radius:6px;font-size:13px;line-height:1.45}
+
+.ticket-service{display:flex;align-items:center;justify-content:center;gap:14px}.bigarrow{font-size:35px;color:var(--maroon);font-weight:900}
+.counter{width:105px;height:70px;border:3px solid #94633d;background:#fff8ed;position:relative}.counter:before{content:"";position:absolute;left:6px;right:6px;top:-12px;height:10px;background:#e9b77f;border:2px solid #94633d}.counter:after{content:"SERVICE";position:absolute;left:28px;top:23px;border:2px solid #94633d;padding:5px;font-size:9px;font-weight:800}
+.center-note{text-align:center;color:var(--blue);font-weight:800;margin-top:7px}
+
+/* Guided FIFO */
+.guide{background:#fbfdff;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px}
+.guide-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,select,input{font:inherit}
+button{border:0;border-radius:6px;padding:10px 14px;background:var(--blue);color:#fff;font-weight:800;cursor:pointer}
+button:hover{filter:brightness(.95)}
+button.green{background:var(--green)} button.red{background:var(--red)} button.gray{background:#64748b} button.maroon{background:var(--maroon)}
+.guide-msg{margin-top:10px;padding:10px 12px;background:#eef5ff;border-radius:6px;color:var(--blue);font-weight:700;min-height:39px}
+.guide-stage{min-height:170px;display:flex;align-items:center;justify-content:center;overflow:auto}
+.guide-queue{display:flex;align-items:center;gap:0;padding:35px 15px 15px;min-width:max-content}
+.gnode{width:86px;height:54px;border:3px solid var(--blue);background:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;position:relative}
+.gnode:not(:last-child):after{content:"→";position:absolute;right:-30px;color:var(--maroon);font-size:25px}
+.gnode .tag{position:absolute;top:-37px;font-size:12px;font-weight:900;white-space:nowrap}
+.gnode .tag.front{color:#075fca;left:-2px}.gnode .tag.rear{color:var(--red);right:-2px}
+.step-list{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.step{padding:9px;border:1px solid var(--line);border-radius:6px;text-align:center;font-size:12px;background:#fff}
+.step.active{border:2px solid var(--blue);background:#eaf4ff;color:var(--blue);font-weight:800}
+
+/* Array visualizer */
+.visualizer{background:linear-gradient(180deg,#f4fff7,#fff);border:2px solid #cce7d5}
+.controls{display:grid;grid-template-columns:145px 140px 105px 105px 1fr;gap:9px;align-items:end;background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px}
+.field label{display:block;color:var(--blue);font-size:11px;font-weight:800;margin-bottom:4px}
+select,input{width:100%;height:39px;padding:7px 9px;border:1px solid #b9c9db;border-radius:6px;background:#fff}
+.statebox{background:#e9f4ff;border:1px solid #cce1f5;border-radius:6px;padding:6px;text-align:center}.statebox small{display:block;color:var(--muted);font-size:10px}.statebox strong{display:block;color:var(--blue);font-size:17px;margin-top:2px}
+.msg{margin-top:8px;padding:9px 12px;border-radius:6px;background:#eaf4ff;color:var(--blue);font-weight:800;min-height:38px}
+.array-wrap{overflow:auto;padding:48px 10px 22px}
+.array{display:flex;justify-content:center;min-width:690px}
+.acell-wrap{width:92px;position:relative;text-align:center}.pointer-space{height:40px;position:relative}.pointer{position:absolute;top:0;font-size:13px;font-weight:900;white-space:nowrap}.pointer:after{content:"↓";display:block;font-size:22px;line-height:18px}.pointer.front{color:#075fca;left:50%;transform:translateX(-50%)}.pointer.rear{color:var(--red);left:50%;transform:translateX(-50%)}
+.acell{height:58px;border:2px solid var(--blue);background:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:900}.acell.used{background:#edf6ff}.acell.removed{background:#fff5f5;color:#cbd5e1}
+.index{font-size:11px;color:#64748b;margin-top:5px}
+.info{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.card{border:1px solid var(--line);background:#fff;border-radius:7px;padding:9px;text-align:center}.card small{color:var(--muted);display:block}.card strong{display:block;color:var(--blue);font-size:17px;margin-top:3px}.card.rear strong{color:var(--red)}
+.visual-notes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.note{padding:10px;border:1px solid var(--line);border-radius:7px;font-size:13px;line-height:1.45;background:#fff}
+.warning{background:var(--softyellow);border-color:#efd98a}
+
+/* compare/types/apps */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:10px}.compare-card{border:1px solid var(--line);border-radius:8px;padding:13px}.stack{background:var(--softred)}.queue{background:var(--softgreen)}.ctitle{font-size:19px;font-weight:900;margin-bottom:8px}.stack .ctitle{color:var(--red)}.queue .ctitle{color:var(--green)}
+.compare-body{display:grid;grid-template-columns:1fr .9fr;gap:10px;align-items:center}.stack-diagram{width:130px;margin:auto}.stack-cell{height:38px;border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;background:#fff;font-weight:800}.topmark{text-align:center;color:var(--red);font-weight:900;margin-bottom:4px}
+.qdiagram{display:flex;justify-content:center;padding-top:30px}.qcell{width:63px;height:43px;border:2px solid var(--blue);background:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;position:relative}.qcell:not(:last-child):after{content:"→";position:absolute;right:-22px;color:var(--maroon);font-size:20px}.qtag{position:absolute;top:-29px;font-size:11px;font-weight:900;white-space:nowrap}.qtag.f{left:0;color:#075fca}.qtag.r{right:0;color:var(--red)}
+.points{font-size:13px;line-height:1.7}
+.types{display:grid;grid-template-columns:1fr 1fr;gap:9px}.type{border:1px solid var(--line);border-radius:8px;padding:12px;min-height:145px}.type h3{margin:0 0 5px;color:var(--blue);font-size:16px}.type p{font-size:12px;line-height:1.4;margin:0}.linear{background:#edf6ff}.circular{background:#fff0f4}.priority{background:#fff8df}.deque{background:#edfbf1}
+.apps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.app{border:1px solid var(--line);border-radius:7px;padding:11px;background:#fbfdff}.app strong{color:var(--blue);font-size:14px}.app p{font-size:12px;line-height:1.4;margin:4px 0 0}
+
+
+/* Interactive Queue vs Stack and Queue Types */
+.compare-live{min-height:205px;display:flex;align-items:center;justify-content:center;overflow:auto}
+.type-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+.type-tab{background:#eaf4ff;color:var(--blue);border:1px solid #bdd5ed}
+.type-tab.active{background:var(--blue);color:#fff}
+.type-demo{border:1px solid var(--line);border-radius:9px;background:#fbfdff;padding:15px;min-height:310px}
+.type-demo-title{font-size:20px;font-weight:900;color:var(--blue);text-align:center}
+.type-demo-desc{text-align:center;margin:5px 0 15px;color:var(--muted);font-size:13px}
+.type-visual{min-height:135px;display:flex;align-items:center;justify-content:center;overflow:auto}
+.type-actions{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:8px 0}
+.type-result{background:#eef5ff;color:var(--blue);border-radius:6px;padding:9px;text-align:center;font-weight:800;min-height:37px}
+.circular-demo{width:220px;height:150px;position:relative}
+.circular-node{position:absolute;width:52px;height:38px;border:2px solid var(--blue);background:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;border-radius:5px}
+.circular-node.n1{left:84px;top:0}.circular-node.n2{right:0;top:55px}.circular-node.n3{left:84px;bottom:0}.circular-node.n4{left:0;top:55px}
+.circular-demo .arrow{position:absolute;color:var(--maroon);font-size:22px;font-weight:900}
+.circular-demo .a1{left:146px;top:28px}.circular-demo .a2{right:55px;top:90px}.circular-demo .a3{left:62px;top:90px}.circular-demo .a4{left:82px;top:28px;transform:rotate(180deg)}
+.priority-list{display:flex;gap:10px;align-items:flex-end;justify-content:center}
+.priority-item{width:92px;border:2px solid var(--blue);background:#fff;border-radius:6px;padding:8px;text-align:center;font-weight:900}
+.priority-item small{display:block;color:var(--muted);font-weight:700;font-size:10px;margin-top:3px}
+.deque-demo{display:flex;align-items:center;justify-content:center}
+.deque-box{border:2px solid var(--blue);background:#fff;padding:14px 22px;font-weight:900;position:relative}
+.deque-box:before{content:"INSERT / DELETE";position:absolute;left:-120px;top:18px;color:var(--blue);font-size:11px}
+.deque-box:after{content:"INSERT / DELETE";position:absolute;right:-120px;top:18px;color:var(--red);font-size:11px}
+
+
+.stack-live-wrap{display:flex;flex-direction:column;align-items:center;min-height:195px;justify-content:center}
+.stack-top-label{color:var(--maroon);font-weight:900;font-size:14px;height:29px;display:flex;align-items:center;gap:6px}
+.stack-top-label:after{content:"↓";font-size:23px;line-height:15px}
+.stack-diagram .stack-cell{width:130px;height:42px}
+.queue-live-wrap{width:100%;overflow:auto;padding:35px 20px 10px}
+.queue-live-wrap .qdiagram{min-width:max-content}
+.compare-card.stack .compare-live{min-height:225px}
+.compare-card.queue .compare-live{min-height:225px}
+
+
+/* Improved interactive Queue Types */
+.type-demo{min-height:390px}
+.type-visual{min-height:190px;position:relative}
+.type-actions{min-height:48px}
+.type-result{min-height:42px;display:flex;align-items:center;justify-content:center}
+
+.type-array{
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+  padding:55px 10px 30px;
+  min-width:620px;
+}
+.type-array-cell{
+  width:82px;height:58px;border:2px solid var(--blue);
+  background:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:18px;position:relative;
+}
+.type-array-cell.empty{color:#cbd5e1;background:#f8fafc}
+.type-array-cell:not(:last-child){border-right-width:1px}
+.type-pointer{
+  position:absolute;top:-42px;left:50%;transform:translateX(-50%);
+  white-space:nowrap;font-size:12px;font-weight:900;
+}
+.type-pointer.front{color:#075fca}
+.type-pointer.rear{color:var(--red)}
+.type-index{
+  position:absolute;bottom:-22px;left:0;right:0;text-align:center;
+  font-size:10px;color:var(--muted);
+}
+
+.circular-stage{
+  width:330px;height:210px;position:relative;margin:auto;
+}
+.circular-stage svg{
+  position:absolute;inset:0;width:100%;height:100%;overflow:visible;
+}
+.circular-node{
+  position:absolute;width:62px;height:46px;border:2px solid var(--blue);
+  border-radius:7px;background:#fff;display:flex;align-items:center;
+  justify-content:center;font-weight:900;z-index:2;
+}
+.circular-node.n1{left:134px;top:5px}
+.circular-node.n2{right:12px;top:82px}
+.circular-node.n3{left:134px;bottom:5px}
+.circular-node.n4{left:12px;top:82px}
+.circular-node.empty{background:#f8fafc;color:#cbd5e1}
+.circular-label{
+  position:absolute;font-size:11px;font-weight:900;z-index:3;
+}
+.circular-label.front{left:139px;top:-24px;color:#075fca}
+.circular-label.rear{right:2px;top:58px;color:var(--red)}
+
+.priority-stage{
+  display:flex;align-items:flex-end;justify-content:center;
+  gap:14px;min-width:480px;padding-top:28px;
+}
+.priority-item{
+  width:105px;border:2px solid var(--blue);background:#fff;
+  border-radius:7px;text-align:center;padding:10px 6px;
+  font-weight:900;position:relative;
+}
+.priority-item .priority-no{
+  display:block;color:var(--muted);font-size:10px;margin-top:5px;font-weight:700;
+}
+.priority-item.highest{border:3px solid var(--green);background:var(--softgreen)}
+.priority-badge{
+  position:absolute;top:-25px;left:50%;transform:translateX(-50%);
+  color:var(--green);font-size:10px;white-space:nowrap;
+}
+.deque-stage{
+  display:flex;align-items:center;justify-content:center;
+  gap:0;min-width:500px;padding:50px 20px 30px;
+}
+.deque-end{
+  width:120px;text-align:center;font-size:11px;font-weight:900;
+}
+.deque-end.left{color:#075fca}.deque-end.right{color:var(--red)}
+.deque-main{
+  display:flex;
+}
+.deque-cell{
+  width:72px;height:55px;border:2px solid var(--blue);
+  background:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:17px;
+}
+.deque-cell:not(:last-child){border-right-width:1px}
+.type-status-pill{
+  display:inline-block;padding:4px 9px;border-radius:15px;
+  background:#eaf4ff;color:var(--blue);font-size:11px;font-weight:800;
+  margin-left:5px;
+}
+
+
+/* Fully interactive queue-type visualizers */
+.type-status{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:7px;
+  margin:8px 0 10px;
+}
+.type-status-card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:7px;
+  text-align:center;
+}
+.type-status-card small{display:block;color:var(--muted);font-size:10px}
+.type-status-card strong{display:block;color:var(--blue);font-size:15px;margin-top:2px}
+.type-status-card.warn strong{color:var(--red)}
+.type-linear-wrap{overflow:auto;width:100%;padding:50px 15px 22px}
+.type-linear-array{display:flex;justify-content:center;min-width:600px}
+.type-linear-cell{
+  width:78px;height:58px;border:2px solid var(--blue);background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:18px;position:relative;
+}
+.type-linear-cell.empty{color:#b7c2d0;background:#f8fafc}
+.type-linear-cell .tptr{
+  position:absolute;top:-40px;font-size:11px;font-weight:900;white-space:nowrap;
+}
+.type-linear-cell .tf{color:#075fca;left:50%;transform:translateX(-50%)}
+.type-linear-cell .tr{color:var(--red);left:50%;transform:translateX(-50%)}
+.type-circular-board{
+  width:330px;height:250px;position:relative;margin:auto;
+}
+.type-circular-board svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.cnode{
+  position:absolute;width:60px;height:48px;border:2px solid var(--blue);
+  border-radius:7px;background:#fff;display:flex;align-items:center;
+  justify-content:center;font-weight:900;z-index:2;
+}
+.cnode.c0{left:135px;top:4px}.cnode.c1{right:20px;top:96px}
+.cnode.c2{left:135px;bottom:4px}.cnode.c3{left:20px;top:96px}
+.cnode.empty{background:#f8fafc;color:#b7c2d0}
+.cnode .cptr{
+  position:absolute;font-size:10px;white-space:nowrap;font-weight:900;
+}
+.cnode .frontptr{top:-30px;left:50%;transform:translateX(-50%);color:#075fca}
+.cnode .rearptr{bottom:-30px;left:50%;transform:translateX(-50%);color:var(--red)}
+.priority-board{display:flex;gap:10px;align-items:flex-end;justify-content:center;min-height:150px;overflow:auto;padding:35px 10px 15px}
+.pitem{
+  width:105px;border:2px solid var(--blue);background:#fff;border-radius:7px;
+  padding:9px;text-align:center;font-weight:900;position:relative;
+}
+.pitem .pname{font-size:16px}.pitem .pval{font-size:11px;color:var(--muted);margin-top:4px}
+.pitem.serving{border:3px solid var(--green);background:var(--softgreen)}
+.pitem.serving:before{content:"NEXT";position:absolute;top:-27px;left:50%;transform:translateX(-50%);color:var(--green);font-size:11px;font-weight:900}
+.deque-board{display:flex;align-items:center;justify-content:center;min-height:150px;padding:35px 10px 15px;overflow:auto}
+.deque-cell{width:85px;height:55px;border:2px solid var(--blue);background:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;position:relative}
+.deque-cell.front-cell{border-left:4px solid #075fca}
+.deque-cell.rear-cell{border-right:4px solid var(--red)}
+.deque-pointer{
+  position:absolute;top:-31px;font-size:10px;font-weight:900;white-space:nowrap;
+}
+.deque-pointer.front{left:50%;transform:translateX(-50%);color:#075fca}
+.deque-pointer.rear{left:50%;transform:translateX(-50%);color:var(--red)}
+.type-empty{
+  padding:28px 40px;border:2px dashed #b7c2d0;border-radius:8px;
+  color:#64748b;font-weight:800;
+}
+@media(max-width:700px){
+  .type-status{grid-template-columns:1fr 1fr}
+  .type-linear-array{min-width:520px}
+}
+
+
+/* queue using two stacks */
+.q2s{background:#fbfdff;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px}
+.q2s-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.q2s-controls input{width:140px}
+.q2s-msg{margin-top:9px;background:#eef5ff;color:var(--blue);font-weight:800;padding:9px;border-radius:6px;min-height:38px}
+.q2s-board{display:grid;grid-template-columns:1fr .28fr 1.2fr 1fr;gap:14px;align-items:stretch;margin-top:12px}
+.q2s-panel{border:1px solid var(--line);border-radius:8px;background:#fff;padding:10px;min-height:235px}
+.q2s-panel h3{margin:0 0 8px;color:var(--blue);font-size:16px;text-align:center}
+.q2s-stack{min-height:175px;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;gap:4px;border:2px dashed #cbd5e1;border-radius:7px;padding:10px;background:#f8fbff}
+.q2s-cell{width:90px;height:38px;border:2px solid var(--blue);border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:900}
+.q2s-top{font-size:11px;color:var(--maroon);font-weight:900;margin-bottom:4px}
+.q2s-arrow{display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--maroon);font-weight:900}
+.q2s-queue{min-height:175px;display:flex;align-items:center;justify-content:center;gap:0;overflow:auto;padding:30px 5px 10px}
+.q2s-qcell{position:relative;min-width:68px;height:52px;border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-weight:900;background:#fff}
+.q2s-qcell.front{border-color:#075fca;background:#eef6ff}.q2s-qcell.rear{border-color:var(--red);background:#fff4f4}
+.q2s-pointer{position:absolute;top:-29px;font-size:10px;font-weight:900;white-space:nowrap}
+.q2s-pointer.front{color:#075fca}.q2s-pointer.rear{color:var(--red)}
+.q2s-info{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.q2s-card{border:1px solid var(--line);border-radius:7px;padding:9px;text-align:center}.q2s-card small{display:block;color:var(--muted)}.q2s-card strong{display:block;color:var(--blue);margin-top:3px}
+.practice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.practice-card{border:1px solid var(--line);border-radius:8px;padding:11px;background:#fff}.practice-card strong{color:var(--blue)}.practice-card p{margin:6px 0 0;line-height:1.5}
+.copyright{margin-top:8px;text-align:center;font-size:12px;color:#dbeafe}
+@media(max-width:900px){.q2s-board{grid-template-columns:1fr}.q2s-arrow{transform:rotate(90deg);min-height:25px}.q2s-info,.practice-grid{grid-template-columns:1fr 1fr}}
+
+/* linked list interactive */
+.linked{background:#fbfdff;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px}
+.ll-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ll-controls input{width:140px}.ll-msg{margin-top:9px;background:#eef5ff;color:var(--blue);font-weight:800;padding:9px;border-radius:6px;min-height:38px}
+.ll-stage{min-height:210px;display:flex;align-items:center;justify-content:center;overflow:auto;padding:48px 15px 15px}.ll-list{display:flex;align-items:center;min-width:max-content}.llwrap{position:relative;display:flex;align-items:center}.llnode{width:88px;height:58px;border:2px solid var(--blue);background:#fff;display:grid;grid-template-columns:1fr 26px;font-weight:800}.data{display:flex;align-items:center;justify-content:center;border-right:1px solid var(--blue)}.next{display:flex;align-items:center;justify-content:center;font-size:10px}.llarrow{width:45px;text-align:center;color:var(--maroon);font-size:24px;font-weight:900}.lltag{position:absolute;top:-40px;font-size:13px;font-weight:900;white-space:nowrap}.lltag.front{left:0;color:#075fca}.lltag.rear{right:0;color:var(--red)}
+.ll-info{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.llcard{border:1px solid var(--line);border-radius:7px;padding:9px;text-align:center}.llcard small{display:block;color:var(--muted)}.llcard strong{display:block;color:var(--blue);margin-top:3px}
+
+/* code */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}.logic{border:1px solid var(--line);border-radius:8px;overflow:hidden}.logic h3{margin:0;padding:9px 12px;background:#eaf4ff;color:var(--blue);font-size:15px}.logic pre{margin:0;padding:12px;background:#0d1728;color:#f3f7ff;overflow:auto;font:12px/1.5 Consolas,"Courier New",monospace}
+.codebox{background:#0d1728;color:#f3f7ff;border-radius:8px;padding:15px;overflow:auto;max-height:540px;font:12px/1.5 Consolas,"Courier New",monospace;white-space:pre}
+.edge{margin-top:9px;padding:10px 12px;background:#fff3f5;border-left:4px solid var(--maroon);font-size:13px;line-height:1.5}
+.summary{display:grid;grid-template-columns:1.2fr .8fr;gap:10px}.summary ul{line-height:1.8;margin:0}.quote{background:#eaf4ff;border-radius:8px;padding:22px;text-align:center;color:var(--blue);font-weight:800;font-size:17px;display:flex;align-items:center;justify-content:center}
+footer{background:#102c4c;color:#fff;padding:13px 20px;display:flex;justify-content:space-between;font-size:12px}
+
+@media(max-width:1000px){.controls{grid-template-columns:1fr 1fr 1fr}.statebox{grid-column:1/-1}.ticket-grid,.linked-grid,.summary{grid-template-columns:1fr}}
+@media(max-width:800px){.sidebar{display:none}.page-name{display:none}.main{padding:9px}.compare,.types,.two-col{grid-template-columns:1fr}.apps{grid-template-columns:1fr 1fr}.info{grid-template-columns:1fr 1fr}.visual-notes{grid-template-columns:1fr}}
+@media(max-width:520px){.controls{grid-template-columns:1fr}.apps,.info{grid-template-columns:1fr}.compare-body{grid-template-columns:1fr}}
+</style>
+</head>
+
+<body>
+
+<header class="topbar">
+  <div>
+    <div class="brand">Data Structures and Algorithms</div>
+    <div class="sub">Learn • Visualize • Practice</div>
+  </div>
+  <div>
+    <div class="page-name">Queue Visualizer</div>
+    <div class="author">Developed by <strong>Surajit Sahoo</strong></div>
+  </div>
+</header>
+
+<div class="layout">
+
+<aside class="sidebar">
+  <a class="active" href="#home">⌂ Home</a>
+  <a href="#definition">1. What is a Queue?</a>
+  <a href="#operations">2. Queue Operations</a>
+  <a href="#comparison">3. Queue vs Stack</a>
+  <a href="#types">4. Types of Queue</a>
+  <a href="#applications">5. Applications</a>
+  <a href="#linked">6. Queue using Linked List</a>
+  <a href="#program">7. C Program</a>
+  <a href="#twoStacks">8. Queue Using Two Stacks</a>
+  <a href="#summary">9. Summary / Practice</a>
+</aside>
+
+<main class="main">
+
+<section class="section" id="home">
+  <h2>📖 1. What is a Queue?</h2>
+  <p class="lead">
+    A <strong>Queue</strong> is a linear data structure that follows
+    <strong>FIFO — First In, First Out.</strong>
+  </p>
+  <div class="definition">
+    <strong>Think about a ticket counter:</strong>
+    the person who comes first is served first.
+  </div>
+
+  <div class="ticket-grid">
+    <div class="people">
+      <div class="person"><img class="person-photo" src="https://randomuser.me/api/portraits/women/44.jpg" alt="Person A"><div class="person-label">A</div></div>
+      <div class="person"><img class="person-photo" src="https://randomuser.me/api/portraits/men/32.jpg" alt="Person B"><div class="person-label">B</div></div>
+      <div class="person"><img class="person-photo" src="https://randomuser.me/api/portraits/women/68.jpg" alt="Person C"><div class="person-label">C</div></div>
+      <div class="person"><img class="person-photo" src="https://randomuser.me/api/portraits/men/75.jpg" alt="Person D"><div class="person-label">D</div></div>
+      <div class="person"><img class="person-photo" src="https://randomuser.me/api/portraits/men/46.jpg" alt="Person E"><div class="person-label">E</div></div>
+      <span class="bigarrow">→</span>
+    </div>
+    <div>
+      <div class="ticket-service"><span class="bigarrow">→</span><div class="counter"></div></div>
+      <div class="center-note">First In → First Out</div>
+    </div>
+  </div>
+
+  <div class="guide">
+    <strong style="color:var(--blue)">Try the idea step-by-step</strong>
+    <div class="guide-controls" style="margin-top:9px">
+      <select id="guideOp">
+        <option value="enqueue">ENQUEUE</option>
+        <option value="dequeue">DEQUEUE</option>
+        <option value="peek">FRONT</option>
+        <option value="rear">REAR</option>
+        <option value="isempty">ISEMPTY()</option>
+        <option value="isfull">ISFULL()</option>
+      </select>
+      <button class="green" onclick="guideApply()">Apply Operation</button>
+      <button class="gray" onclick="guideReset()">Reset Example</button>
+    </div>
+    <div class="guide-msg" id="guideMsg">The queue is empty. Choose an operation and click Apply Operation.</div>
+    <div class="op-result" id="guideResult">Result: —</div>
+    <div class="guide-stage"><div class="guide-queue" id="guideQueue"></div></div>
+    <div class="step-list" style="grid-template-columns:repeat(6,1fr)">
+      <div class="step" id="s1">1. ENQUEUE → REAR</div>
+      <div class="step" id="s2">2. FIFO order</div>
+      <div class="step" id="s3">3. DEQUEUE ← FRONT</div>
+      <div class="step" id="s4">4. FRONT reads first</div>
+      <div class="step" id="s5">5. REAR reads last</div>
+      <div class="step" id="s6">6. EMPTY / FULL</div>
+    </div>
+  </div>
+</section>
+
+<section class="section visualizer" id="operations">
+  <h2>⚙ 2. Interactive Queue Visualizer — Array Implementation</h2>
+  <p class="lead">
+    Now perform the same idea using an <strong>array</strong>.
+    Watch exactly where <strong>FRONT</strong> and <strong>REAR</strong> point.
+  </p>
+
+  <div class="controls">
+    <div class="field">
+      <label>OPERATION</label>
+      <select id="arrOp">
+        <option value="enqueue">ENQUEUE</option>
+        <option value="dequeue">DEQUEUE</option>
+        <option value="peek">PEEK (FRONT)</option>
+        <option value="frontValue">FRONT</option>
+        <option value="rearValue">REAR</option>
+        <option value="isempty">ISEMPTY()</option>
+        <option value="isfull">ISFULL()</option>
+        <option value="display">DISPLAY</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>VALUE</label>
+      <input id="arrValue" type="number" placeholder="Enter value">
+    </div>
+    <button class="green" onclick="arrayApply()">Apply</button>
+    <button class="reset" onclick="arrayReset()">Reset</button>
+    <div class="statebox">
+      <small>QUEUE STATE (FRONT → REAR)</small>
+      <strong id="arrState">EMPTY</strong>
+    </div>
+  </div>
+
+  <div class="msg" id="arrMsg">
+    Start with ENQUEUE. The first element makes both FRONT and REAR point to index 0.
+  </div>
+  <div class="operation-help">
+    <strong>FRONT:</strong> read the first element &nbsp;|&nbsp;
+    <strong>REAR:</strong> read the last element &nbsp;|&nbsp;
+    <strong>ISEMPTY():</strong> checks whether the queue has no elements &nbsp;|&nbsp;
+    <strong>ISFULL():</strong> checks whether REAR has reached the last array position.
+  </div>
+
+  <div class="array-wrap">
+    <div class="array" id="arrayVisual"></div>
+  </div>
+
+  <div class="info">
+    <div class="card"><small>Current Operation</small><strong id="arrCurrent">START</strong></div>
+    <div class="card"><small>FRONT (index)</small><strong id="arrFront">—</strong></div>
+    <div class="card rear"><small>REAR (index)</small><strong id="arrRear">—</strong></div>
+    <div class="card"><small>Queue Size</small><strong id="arrSize">0 / 6</strong></div>
+  </div>
+
+  <div class="visual-notes">
+    <div class="note">
+      <strong>ENQUEUE:</strong> put the new value at <strong>REAR</strong>,
+      then move REAR forward.
+    </div>
+    <div class="note">
+      <strong>DEQUEUE:</strong> remove the value at <strong>FRONT</strong>,
+      then move FRONT forward.
+    </div>
+    <div class="note warning">
+      <strong>Important:</strong> a simple linear array queue can have unused
+      cells at the beginning after DEQUEUE.
+    </div>
+    <div class="note">
+      This is one reason we later study the <strong>Circular Queue</strong>.
+    </div>
+  </div>
+</section>
+
+
+<section class="section" id="comparison">
+  <h2>⚖ 3. Queue vs Stack — Interactive Visualizer</h2>
+  <p class="lead">
+    Add values to both structures, then remove them separately.
+    Watch <strong>TOP</strong>, <strong>FRONT</strong>, and <strong>REAR</strong> move.
+  </p>
+
+  <div class="compare-controls" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin:10px 0">
+    <div class="field" style="width:130px">
+      <label style="display:block;color:var(--blue);font-size:11px;font-weight:800;margin-bottom:4px">VALUE</label>
+      <input id="compareValue" type="number" placeholder="e.g. 40">
+    </div>
+    <button class="green" onclick="compareAdd()">ADD TO BOTH</button>
+    <button class="maroon" onclick="compareRemoveStack()">REMOVE FROM STACK</button>
+    <button class="red" onclick="compareRemoveQueue()">REMOVE FROM QUEUE</button>
+    <button class="gray" onclick="compareReset()">RESET</button>
+  </div>
+
+  <div class="msg" id="compareMsg">
+    Start with a value such as 10. ADD TO BOTH puts it at the TOP of the Stack and at the REAR of the Queue.
+  </div>
+
+  <div class="compare">
+    <div class="compare-card stack">
+      <div class="ctitle">STACK — LIFO</div>
+      <div style="text-align:center;font-size:13px;margin-bottom:5px">
+        <strong>Last In → First Out</strong>
+      </div>
+      <div class="compare-live">
+        <div class="stack-live-wrap">
+          <div class="stack-top-label" id="stackTopLabel">TOP = EMPTY</div>
+          <div class="stack-diagram" id="liveStack"></div>
+        </div>
+      </div>
+      <div class="points" style="text-align:center;margin-top:8px">
+        <strong>INSERT:</strong> TOP &nbsp; | &nbsp;
+        <strong>DELETE:</strong> TOP
+      </div>
+      <div class="definition" style="margin-top:8px;text-align:center">
+        The <strong>last value added</strong> is removed first.
+      </div>
+    </div>
+
+    <div class="compare-card queue">
+      <div class="ctitle">QUEUE — FIFO</div>
+      <div style="text-align:center;font-size:13px;margin-bottom:5px">
+        <strong>First In → First Out</strong>
+      </div>
+      <div class="compare-live">
+        <div class="queue-live-wrap">
+          <div class="qdiagram" id="liveQueue"></div>
+        </div>
+      </div>
+      <div class="points" style="text-align:center;margin-top:8px">
+        <strong>INSERT:</strong> REAR &nbsp; | &nbsp;
+        <strong>DELETE:</strong> FRONT
+      </div>
+      <div class="definition" style="margin-top:8px;text-align:center">
+        The <strong>first value added</strong> is removed first.
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top:10px">
+    <div class="logic">
+      <h3>STACK</h3>
+      <pre>ADD 10
+ADD 20
+ADD 30
+
+        TOP
+         ↓
+       [ 30 ]
+       [ 20 ]
+       [ 10 ]
+
+REMOVE()
+→ 30 is removed first</pre>
+    </div>
+    <div class="logic">
+      <h3>QUEUE</h3>
+      <pre>ENQUEUE 10
+ENQUEUE 20
+ENQUEUE 30
+
+FRONT                 REAR
+  ↓                     ↓
+[ 10 ] → [ 20 ] → [ 30 ]
+
+DEQUEUE()
+→ 10 is removed first</pre>
+    </div>
+  </div>
+</section>
+
+
+<section class="section" id="types">
+  <h2>▦ 4. Types of Queue — Fully Interactive</h2>
+  <p class="lead">
+    Select a queue type and perform the operations. The <strong>visual structure,
+    values, pointers, and status</strong> change after every operation.
+  </p>
+
+  <div class="type-tabs">
+    <button class="type-tab active" onclick="showQueueType('linear',this)">Linear Queue</button>
+    <button class="type-tab" onclick="showQueueType('circular',this)">Circular Queue</button>
+    <button class="type-tab" onclick="showQueueType('priority',this)">Priority Queue</button>
+    <button class="type-tab" onclick="showQueueType('deque',this)">Deque</button>
+  </div>
+
+  <div class="type-demo" id="typeDemo">
+    <div class="type-demo-title" id="typeTitle">Linear Queue</div>
+    <div class="type-demo-desc" id="typeDesc"></div>
+
+    <div class="type-status" id="typeStatus"></div>
+    <div class="type-visual" id="typeVisual"></div>
+    <div class="type-actions" id="typeActions"></div>
+    <div class="type-result" id="typeResult"></div>
+  </div>
+</section>
+
+
+<section class="section" id="applications">
+  <h2>💡 5. Applications of Queue</h2>
+  <div class="apps">
+    <div class="app"><strong>CPU Scheduling</strong><p>Processes wait for CPU service.</p></div>
+    <div class="app"><strong>Printer Queue</strong><p>Print jobs wait to be processed.</p></div>
+    <div class="app"><strong>Network Requests</strong><p>Requests can wait for server processing.</p></div>
+    <div class="app"><strong>Customer Service</strong><p>Customers can be served in arrival order.</p></div>
+    <div class="app"><strong>Breadth First Search</strong><p>BFS uses a queue to process graph levels.</p></div>
+    <div class="app"><strong>Message Queues</strong><p>Messages can wait for processing.</p></div>
+  </div>
+</section>
+
+<section class="section" id="linked">
+  <h2>🔗 6. Queue using Singly Linked List</h2>
+  <p class="lead">
+    A linked-list queue uses two pointers:
+    <strong>FRONT</strong> points to the first node and
+    <strong>REAR</strong> points to the last node.
+  </p>
+
+  <div class="linked">
+    <div class="ll-controls">
+      <strong style="color:var(--blue)">Operation:</strong>
+      <select id="llOp" style="width:150px">
+        <option value="enqueue">ENQUEUE</option>
+        <option value="dequeue">DEQUEUE</option>
+        <option value="peek">PEEK (FRONT)</option>
+        <option value="frontValue">FRONT</option>
+        <option value="rearValue">REAR</option>
+        <option value="isempty">ISEMPTY()</option>
+        <option value="isfull">ISFULL()</option>
+        <option value="display">DISPLAY</option>
+      </select>
+      <input id="llValue" type="number" placeholder="Enter value">
+      <button class="green" onclick="llApply()">Apply</button>
+      <button class="reset" onclick="llReset()">Reset</button>
+    </div>
+
+    <div class="ll-msg" id="llMsg">
+      Start by ENQUEUE. The first node becomes both FRONT and REAR.
+    </div>
+    <div class="operation-help">
+      <strong>FRONT:</strong> first node value &nbsp;|&nbsp;
+      <strong>REAR:</strong> last node value &nbsp;|&nbsp;
+      <strong>ISEMPTY():</strong> <code>front == NULL</code> &nbsp;|&nbsp;
+      <strong>ISFULL():</strong> no fixed capacity; failure can occur only if memory allocation fails.
+    </div>
+
+    <div class="ll-stage">
+      <div class="ll-list" id="llVisual"></div>
+    </div>
+
+    <div class="ll-info">
+      <div class="llcard"><small>Current Operation</small><strong id="llCurrent">START</strong></div>
+      <div class="llcard"><small>FRONT</small><strong id="llFront">NULL</strong></div>
+      <div class="llcard"><small>REAR</small><strong id="llRear">NULL</strong></div>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top:10px">
+    <div class="logic">
+      <h3>ENQUEUE — REAR</h3>
+      <pre>newNode-&gt;data = data;
+newNode-&gt;next = NULL;
+
+if (isEmpty(queue))
+{
+    queue-&gt;front = queue-&gt;rear = newNode;
+}
+else
+{
+    queue-&gt;rear-&gt;next = newNode;
+    queue-&gt;rear = newNode;
+}</pre>
+    </div>
+    <div class="logic">
+      <h3>DEQUEUE — FRONT</h3>
+      <pre>temp = queue-&gt;front;
+data = temp-&gt;data;
+
+queue-&gt;front = queue-&gt;front-&gt;next;
+
+if (queue-&gt;front == NULL)
+    queue-&gt;rear = NULL;
+
+free(temp);</pre>
+    </div>
+  </div>
+
+  <div class="edge">
+    <strong>Think: SAVE → MOVE → FREE.</strong>
+    If the last node is removed, both FRONT and REAR become NULL.
+  </div>
+</section>
+
+<div class="two-col" style="margin-top:10px">
+    <div class="logic">
+      <h3>FRONT / REAR / ISEMPTY</h3>
+      <pre>int frontValue(struct Queue *queue)
+{
+    if (isEmpty(queue))
+        return -1;
+
+    return queue-&gt;front-&gt;data;
+}
+
+int rearValue(struct Queue *queue)
+{
+    if (isEmpty(queue))
+        return -1;
+
+    return queue-&gt;rear-&gt;data;
+}
+
+int isEmpty(struct Queue *queue)
+{
+    return (queue-&gt;front == NULL);
+}</pre>
+    </div>
+    <div class="logic">
+      <h3>Important: ISFULL()</h3>
+      <pre>/* Linked-list queue */
+
+There is no fixed MAX size.
+
+So a normal linked-list
+queue does not need:
+
+    isFull()
+
+The practical limit is
+available memory.
+
+Array Queue:
+    isFull() → rear == MAX - 1
+
+Linked List Queue:
+    no fixed capacity</pre>
+    </div>
+  </div>
+
+<section class="section" id="program">
+  <h2>💻 7. C Program — Queue Using Singly Linked List</h2>
+
+  <div class="codebox">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+struct Node
+{
+    int data;
+    struct Node *next;
+};
+
+struct Queue
+{
+    struct Node *front;
+    struct Node *rear;
+};
+
+struct Queue *createQueue()
+{
+    struct Queue *queue =
+        (struct Queue *)malloc(sizeof(struct Queue));
+
+    queue-&gt;front = NULL;
+    queue-&gt;rear = NULL;
+
+    return queue;
+}
+
+int isEmpty(struct Queue *queue)
+{
+    return (queue-&gt;front == NULL);
+}
+
+void enqueue(struct Queue *queue, int data)
+{
+    struct Node *newNode =
+        (struct Node *)malloc(sizeof(struct Node));
+
+    if (newNode == NULL)
+    {
+        printf("Memory allocation failed.\n");
+        return;
+    }
+
+    newNode-&gt;data = data;
+    newNode-&gt;next = NULL;
+
+    if (isEmpty(queue))
+    {
+        queue-&gt;front = queue-&gt;rear = newNode;
+    }
+    else
+    {
+        queue-&gt;rear-&gt;next = newNode;
+        queue-&gt;rear = newNode;
+    }
+}
+
+int dequeue(struct Queue *queue)
+{
+    struct Node *temp;
+    int data;
+
+    if (isEmpty(queue))
+    {
+        printf("Queue underflow.\n");
+        return -1;
+    }
+
+    temp = queue-&gt;front;
+    data = temp-&gt;data;
+
+    queue-&gt;front = queue-&gt;front-&gt;next;
+
+    if (queue-&gt;front == NULL)
+    {
+        queue-&gt;rear = NULL;
+    }
+
+    free(temp);
+
+    return data;
+}
+
+int frontValue(struct Queue *queue)
+{
+    if (isEmpty(queue))
+    {
+        printf("Queue is empty.\\n");
+        return -1;
+    }
+
+    return queue->front->data;
+}
+
+int rearValue(struct Queue *queue)
+{
+    if (isEmpty(queue))
+    {
+        printf("Queue is empty.\\n");
+        return -1;
+    }
+
+    return queue->rear->data;
+}
+
+void display(struct Queue *queue)
+{
+    struct Node *current;
+
+    if (isEmpty(queue))
+    {
+        printf("Queue is empty.\n");
+        return;
+    }
+
+    current = queue-&gt;front;
+
+    printf("Queue elements: ");
+
+    while (current != NULL)
+    {
+        printf("%d ", current-&gt;data);
+        current = current-&gt;next;
+    }
+
+    printf("\n");
+}
+
+int main()
+{
+    struct Queue *queue = createQueue();
+
+    enqueue(queue, 10);
+    enqueue(queue, 20);
+    enqueue(queue, 30);
+
+    display(queue);
+
+    printf("Dequeued element: %d\n",
+           dequeue(queue));
+
+    display(queue);
+
+    printf("Is the queue empty? %s\n",
+           isEmpty(queue) ? "Yes" : "No");
+
+    return 0;
+}</div>
+</section>
+
+<section class="section" id="twoStacks">
+  <h2>🔄 8. Queue Using Two Stacks</h2>
+  <p class="lead">
+    A queue can be implemented using <strong>two stacks</strong>.
+    <strong>ENQUEUE</strong> is performed on Stack 1, while DEQUEUE/FRONT use Stack 2.
+    When Stack 2 is empty, elements are transferred from Stack 1 to Stack 2.
+  </p>
+
+  <div class="q2s">
+    <div class="q2s-controls">
+      <strong style="color:var(--blue)">Operation:</strong>
+      <select id="q2sOp" style="width:150px">
+        <option value="enqueue">ENQUEUE</option>
+        <option value="dequeue">DEQUEUE</option>
+        <option value="front">FRONT</option>
+        <option value="isempty">ISEMPTY()</option>
+        <option value="display">DISPLAY</option>
+      </select>
+      <input id="q2sValue" type="number" placeholder="Enter value">
+      <button class="green" onclick="q2sApply()">Apply</button>
+      <button class="reset" onclick="q2sReset()">Reset</button>
+    </div>
+
+    <div class="q2s-msg" id="q2sMsg">Start by ENQUEUE. New elements enter Stack 1.</div>
+
+    <div class="q2s-board">
+      <div class="q2s-panel">
+        <h3>STACK 1</h3>
+        <div class="q2s-stack" id="q2sS1"></div>
+      </div>
+      <div class="q2s-arrow">⟷</div>
+      <div class="q2s-panel">
+        <h3>QUEUE</h3>
+        <div class="q2s-queue" id="q2sQueue"></div>
+      </div>
+      <div class="q2s-panel">
+        <h3>STACK 2</h3>
+        <div class="q2s-stack" id="q2sS2"></div>
+      </div>
+    </div>
+
+    <div class="q2s-info">
+      <div class="q2s-card"><small>Queue FRONT</small><strong id="q2sFront">NULL</strong></div>
+      <div class="q2s-card"><small>Queue REAR</small><strong id="q2sRear">NULL</strong></div>
+      <div class="q2s-card"><small>Stack 1 Size</small><strong id="q2sSize1">0</strong></div>
+      <div class="q2s-card"><small>Stack 2 Size</small><strong id="q2sSize2">0</strong></div>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top:10px">
+    <div class="logic">
+      <h3>ENQUEUE — PUSH INTO STACK 1</h3>
+      <pre>void enqueue(int value)
+{
+    push(&amp;stack1, value);
+}</pre>
+    </div>
+    <div class="logic">
+      <h3>DEQUEUE — TRANSFER IF NEEDED</h3>
+      <pre>if (isEmpty(&amp;stack2))
+{
+    while (!isEmpty(&amp;stack1))
+        push(&amp;stack2, pop(&amp;stack1));
+}
+
+return pop(&amp;stack2);</pre>
+    </div>
+  </div>
+
+  <div class="edge">
+    <strong>Key idea:</strong> Stack 1 receives new elements. Stack 2 reverses their order, so the oldest element reaches the TOP of Stack 2 and can be removed first.
+  </div>
+
+  <div class="logic" style="margin-top:10px">
+    <h3>Complete C Program — Queue Using Two Stacks</h3>
+    <pre>#include &lt;stdio.h&gt;
+#define MAX 100
+
+int stack1[MAX], stack2[MAX];
+int top1 = -1, top2 = -1;
+
+int isEmpty1()
+{
+    return (top1 == -1);
+}
+
+int isEmpty2()
+{
+    return (top2 == -1);
+}
+
+void push1(int value)
+{
+    stack1[++top1] = value;
+}
+
+void push2(int value)
+{
+    stack2[++top2] = value;
+}
+
+int pop1()
+{
+    return stack1[top1--];
+}
+
+int pop2()
+{
+    return stack2[top2--];
+}
+
+void transfer()
+{
+    while (!isEmpty1())
+        push2(pop1());
+}
+
+void enqueue(int value)
+{
+    if (top1 + top2 + 2 &gt; MAX)
+    {
+        printf("Queue Overflow\n");
+        return;
+    }
+
+    push1(value);
+}
+
+int dequeue()
+{
+    if (isEmpty1() &amp;&amp; isEmpty2())
+    {
+        printf("Queue Underflow\n");
+        return -1;
+    }
+
+    if (isEmpty2())
+        transfer();
+
+    return pop2();
+}
+
+int frontValue()
+{
+    if (isEmpty1() &amp;&amp; isEmpty2())
+        return -1;
+
+    if (isEmpty2())
+        transfer();
+
+    return stack2[top2];
+}
+
+void display()
+{
+    int i;
+
+    if (isEmpty1() &amp;&amp; isEmpty2())
+    {
+        printf("Queue is empty.\n");
+        return;
+    }
+
+    printf("Queue: ");
+
+    for (i = top2; i &gt;= 0; i--)
+        printf("%d ", stack2[i]);
+
+    for (i = 0; i &lt;= top1; i++)
+        printf("%d ", stack1[i]);
+
+    printf("\n");
+}
+
+int main()
+{
+    int choice, value;
+
+    while (1)
+    {
+        printf("\n--- QUEUE USING TWO STACKS ---\n");
+        printf("1. ENQUEUE\n");
+        printf("2. DEQUEUE\n");
+        printf("3. FRONT\n");
+        printf("4. DISPLAY\n");
+        printf("5. ISEMPTY\n");
+        printf("6. EXIT\n");
+        printf("Enter choice: ");
+        scanf("%d", &amp;choice);
+
+        switch (choice)
+        {
+            case 1:
+                printf("Enter value: ");
+                scanf("%d", &amp;value);
+                enqueue(value);
+                break;
+
+            case 2:
+                value = dequeue();
+                if (value != -1)
+                    printf("Dequeued: %d\n", value);
+                break;
+
+            case 3:
+                value = frontValue();
+                if (value != -1)
+                    printf("Front: %d\n", value);
+                else
+                    printf("Queue is empty.\n");
+                break;
+
+            case 4:
+                display();
+                break;
+
+            case 5:
+                printf("%s\n",
+                       (isEmpty1() &amp;&amp; isEmpty2()) ?
+                       "Queue is empty." : "Queue is not empty.");
+                break;
+
+            case 6:
+                return 0;
+
+            default:
+                printf("Invalid choice.\n");
+        }
+    }
+
+    return 0;
+}</pre>
+  </div>  </div>
+</section>
+
+<section class="section" id="summary">
+  <h2>✓ 9. Summary &amp; Practice Questions</h2>
+  <div class="summary">
+    <ul>
+      <li>Queue follows <strong>FIFO — First In, First Out</strong>.</li>
+      <li><strong>ENQUEUE</strong> adds an element at the <strong>REAR</strong>.</li>
+      <li><strong>DEQUEUE</strong> removes an element from the <strong>FRONT</strong>.</li>
+      <li><strong>FRONT / PEEK</strong> reads the first element without removing it.</li>
+      <li><strong>REAR</strong> identifies the last element currently in the queue.</li>
+      <li><strong>ISEMPTY()</strong> checks whether the queue contains no elements.</li>
+      <li><strong>ISFULL()</strong> is mainly relevant to fixed-size array queues.</li>
+      <li>A linked-list queue normally maintains both <strong>FRONT</strong> and <strong>REAR</strong>.</li>
+      <li>In a linked-list queue, ENQUEUE happens at REAR and DEQUEUE happens at FRONT.</li>
+      <li>When the last linked-list node is removed, both FRONT and REAR become <strong>NULL</strong>.</li>
+      <li>Queue variants include <strong>Linear Queue, Circular Queue, Priority Queue, and Deque</strong>.</li>
+      <li>A queue can also be implemented using <strong>two stacks</strong>.</li>
+      <li>In a two-stack queue, Stack 1 receives new elements and Stack 2 provides the FIFO order.</li>
+    </ul>
+    <div class="quote">“First In, First Out —<br>understand the order, then understand the implementation.”</div>
+  </div>
+
+  <h3 style="color:var(--blue);margin:18px 0 7px">Practice Questions</h3>
+  <div class="practice-grid">
+    <div class="practice-card"><strong>Q1.</strong><p>What is the difference between FIFO and LIFO? Give one real-life example of each.</p></div>
+    <div class="practice-card"><strong>Q2.</strong><p>For a queue containing 10, 20, 30, 40, perform ENQUEUE(50), DEQUEUE(), and FRONT(). What is the final queue and FRONT value?</p></div>
+    <div class="practice-card"><strong>Q3.</strong><p>Why are both FRONT and REAR pointers maintained in a linked-list queue?</p></div>
+    <div class="practice-card"><strong>Q4.</strong><p>What happens to FRONT and REAR when the only node in a linked-list queue is dequeued?</p></div>
+    <div class="practice-card"><strong>Q5.</strong><p>Explain the difference between a linear queue and a circular queue. Why can a circular queue reuse freed positions?</p></div>
+    <div class="practice-card"><strong>Q6.</strong><p>What is the purpose of a priority queue? How does its removal rule differ from ordinary FIFO?</p></div>
+    <div class="practice-card"><strong>Q7.</strong><p>What operations are possible at the two ends of a deque?</p></div>
+    <div class="practice-card"><strong>Q8.</strong><p>Trace ENQUEUE(10), ENQUEUE(20), ENQUEUE(30), DEQUEUE(), DEQUEUE() using two stacks. Show Stack 1 and Stack 2 after each important step.</p></div>
+    <div class="practice-card"><strong>Q9.</strong><p>Write the C functions <code>enqueue()</code>, <code>dequeue()</code>, and <code>display()</code> for a singly linked-list queue.</p></div>
+    <div class="practice-card"><strong>Q10.</strong><p>Identify the underflow condition for an array queue and for a linked-list queue.</p></div>
+  </div>
+</section>
+
+</main>
+</div>
+
+<footer>
+  <span>© 2026 Surajit Sahoo. All Rights Reserved.</span>
+  <span>Queue Visualizer • Data Structures and Algorithms</span>
+</footer>
+
+<script>
+/* ---------- GUIDED FIFO EXAMPLE ---------- */
+const guidePeople = [
+  {id:"A", photo:"https://randomuser.me/api/portraits/women/44.jpg"},
+  {id:"B", photo:"https://randomuser.me/api/portraits/men/32.jpg"},
+  {id:"C", photo:"https://randomuser.me/api/portraits/women/68.jpg"},
+  {id:"D", photo:"https://randomuser.me/api/portraits/men/75.jpg"},
+  {id:"E", photo:"https://randomuser.me/api/portraits/men/46.jpg"}
+];
+let guideQ = [];
+let guideNext = 0;
+const GUIDE_MAX = 5;
+
+function renderGuide(){
+  const box = document.getElementById("guideQueue");
+  box.innerHTML = "";
+
+  if(guideQ.length === 0){
+    const e = document.createElement("div");
+    e.style.cssText = "padding:20px 35px;border:2px dashed #aeb9c7;border-radius:8px;color:#64748b;font-weight:700";
+    e.textContent = "Queue is empty";
+    box.appendChild(e);
+  }else{
+    guideQ.forEach((person,i)=>{
+      const n=document.createElement("div");
+      n.className="gnode";
+      n.style.width="92px";
+      n.style.height="82px";
+      n.style.flexDirection="column";
+      const img=document.createElement("img");
+      img.src=person.photo;
+      img.alt="Person "+person.id;
+      img.style.cssText="width:38px;height:48px;object-fit:cover;border-radius:6px;margin-bottom:2px";
+      const label=document.createElement("span");
+      label.textContent=person.id;
+      n.append(img,label);
+
+      if(i===0){
+        const t=document.createElement("span");
+        t.className="tag front";
+        t.textContent="FRONT ↓";
+        n.appendChild(t);
+      }
+      if(i===guideQ.length-1){
+        const t=document.createElement("span");
+        t.className="tag rear";
+        t.textContent="REAR ↓";
+        n.appendChild(t);
+      }
+      box.appendChild(n);
+    });
+  }
+
+  document.getElementById("s1").classList.toggle("active",guideQ.length>0);
+  document.getElementById("s2").classList.toggle("active",guideQ.length>1);
+  document.getElementById("s3").classList.toggle("active",guideQ.length===0 && guideNext>0);
+  document.getElementById("s4").classList.toggle("active",guideQ.length>0);
+  document.getElementById("s5").classList.toggle("active",guideQ.length>0);
+  document.getElementById("s6").classList.toggle("active",guideQ.length===0 || guideQ.length===GUIDE_MAX);
+}
+
+function guideApply(){
+  const op=document.getElementById("guideOp").value;
+  const msg=document.getElementById("guideMsg");
+  const result=document.getElementById("guideResult");
+
+  if(op==="enqueue"){
+    if(guideNext>=guidePeople.length){
+      msg.textContent="Queue is FULL for this five-person example.";
+      result.textContent="Result: ISFULL() = TRUE";
+      renderGuide(); return;
+    }
+    const person=guidePeople[guideNext++];
+    guideQ.push(person);
+    msg.textContent="Person "+person.id+" joined at the REAR. Everyone already waiting stays ahead.";
+    result.textContent="Result: ENQUEUE("+person.id+") completed.";
+  }
+  else if(op==="dequeue"){
+    if(guideQ.length===0){
+      msg.textContent="Queue Underflow: nobody is waiting.";
+      result.textContent="Result: DEQUEUE failed.";
+      renderGuide(); return;
+    }
+    const person=guideQ.shift();
+    msg.textContent="Person "+person.id+" was served from the FRONT. This demonstrates FIFO.";
+    result.textContent="Result: DEQUEUE removed "+person.id+".";
+  }
+  else if(op==="peek"){
+    msg.textContent=guideQ.length ? "FRONT points to the first person. No one is removed." : "Queue is empty.";
+    result.textContent=guideQ.length ? "Result: FRONT = "+guideQ[0].id : "Result: FRONT = NULL";
+  }
+  else if(op==="rear"){
+    msg.textContent=guideQ.length ? "REAR points to the last person who joined." : "Queue is empty.";
+    result.textContent=guideQ.length ? "Result: REAR = "+guideQ[guideQ.length-1].id : "Result: REAR = NULL";
+  }
+  else if(op==="isempty"){
+    const empty=guideQ.length===0;
+    msg.textContent=empty ? "The queue contains no people." : "The queue contains "+guideQ.length+" person(s).";
+    result.textContent="Result: ISEMPTY() = "+(empty?"TRUE":"FALSE");
+  }
+  else if(op==="isfull"){
+    const full=guideQ.length===GUIDE_MAX;
+    msg.textContent=full ? "All five positions are occupied." : "There is still space in this five-person example.";
+    result.textContent="Result: ISFULL() = "+(full?"TRUE":"FALSE");
+  }
+  renderGuide();
+}
+
+function guideReset(){
+  guideQ=[]; guideNext=0;
+  document.getElementById("guideMsg").textContent="The queue is empty. Choose an operation and click Apply Operation.";
+  document.getElementById("guideResult").textContent="Result: ISEMPTY() = TRUE";
+  renderGuide();
+}
+guideReset();
+
+/* ---------- ARRAY QUEUE ---------- */
+/* A simple LINEAR array queue: FRONT and REAR are indices.
+   We intentionally do not shift values during DEQUEUE. */
+const MAX=6;
+let arr=new Array(MAX).fill(null);
+let front=-1;
+let rear=-1;
+let arrOpName="START";
+
+function arrayRender(){
+  const box=document.getElementById("arrayVisual");
+  box.innerHTML="";
+
+  for(let i=0;i<MAX;i++){
+    const wrap=document.createElement("div");
+    wrap.className="acell-wrap";
+
+    const ps=document.createElement("div");
+    ps.className="pointer-space";
+
+    if(i===front && front!==-1){
+      const p=document.createElement("div");
+      p.className="pointer front";
+      p.textContent="FRONT";
+      ps.appendChild(p);
+    }
+
+    if(i===rear && rear!==-1){
+      const p=document.createElement("div");
+      p.className="pointer rear";
+      p.textContent="REAR";
+      ps.appendChild(p);
+    }
+
+    const cell=document.createElement("div");
+    cell.className="acell";
+
+    if(arr[i]!==null){
+      cell.classList.add("used");
+      cell.textContent=arr[i];
+    }else{
+      cell.textContent="";
+    }
+
+    const idx=document.createElement("div");
+    idx.className="index";
+    idx.textContent="[" + i + "]";
+
+    wrap.append(ps,cell,idx);
+    box.appendChild(wrap);
+  }
+
+  const activeCount=arr.filter(v=>v!==null).length;
+
+  document.getElementById("arrState").textContent =
+    activeCount ? arr.slice(front).filter(v=>v!==null).join(" → ") : "EMPTY";
+  document.getElementById("arrCurrent").textContent=arrOpName;
+  document.getElementById("arrFront").textContent=front===-1?"—":front;
+  document.getElementById("arrRear").textContent=rear===-1?"—":rear;
+  document.getElementById("arrSize").textContent=activeCount+" / "+MAX;
+}
+
+function arrayMessage(t){document.getElementById("arrMsg").textContent=t}
+
+function arrayApply(){
+  const op=document.getElementById("arrOp").value;
+
+  if(op==="enqueue"){
+    const raw=document.getElementById("arrValue").value.trim();
+    if(raw===""){arrayMessage("Enter a value for ENQUEUE.");return}
+
+    if(rear===MAX-1){
+      arrOpName="ENQUEUE";
+      arrayMessage("Queue Overflow: REAR has reached the last array position.");
+      arrayRender();
+      return;
+    }
+
+    const value=Number(raw);
+
+    if(front===-1){
+      front=0;
+      rear=0;
+    }else{
+      rear++;
+    }
+
+    arr[rear]=value;
+    arrOpName="ENQUEUE("+value+")";
+    arrayMessage(value+" inserted at REAR (index "+rear+").");
+
+    document.getElementById("arrValue").value="";
+  }
+
+  else if(op==="dequeue"){
+    if(front===-1 || front>rear){
+      arrOpName="DEQUEUE";
+      arrayMessage("Queue Underflow: the queue is empty.");
+      arrayRender();
+      return;
+    }
+
+    const removed=arr[front];
+    arr[front]=null;
+
+    if(front===rear){
+      front=-1;
+      rear=-1;
+    }else{
+      front++;
+    }
+
+    arrOpName="DEQUEUE";
+    arrayMessage(removed+" removed from FRONT. FRONT moves to the next occupied position.");
+  }
+
+  else if(op==="peek"){
+    arrOpName="PEEK";
+    if(front===-1){
+      arrayMessage("Queue is empty. There is no FRONT element.");
+    }else{
+      arrayMessage("FRONT element = "+arr[front]+". Nothing was removed.");
+    }
+  }
+
+  else if(op==="frontValue"){
+    arrOpName="FRONT";
+    if(front===-1){
+      arrayMessage("Queue is empty. FRONT = NULL.");
+    }else{
+      arrayMessage("FRONT points to index "+front+" and stores "+arr[front]+".");
+    }
+  }
+
+  else if(op==="rearValue"){
+    arrOpName="REAR";
+    if(rear===-1){
+      arrayMessage("Queue is empty. REAR = NULL.");
+    }else{
+      arrayMessage("REAR points to index "+rear+" and stores "+arr[rear]+".");
+    }
+  }
+
+  else if(op==="isempty"){
+    arrOpName="ISEMPTY()";
+    const empty=(front===-1);
+    arrayMessage("ISEMPTY() = "+(empty?"TRUE":"FALSE")+".");
+  }
+
+  else if(op==="isfull"){
+    arrOpName="ISFULL()";
+    const full=(rear===MAX-1);
+    arrayMessage("ISFULL() = "+(full?"TRUE":"FALSE")+" because REAR "+(full?"has":"has not")+" reached index "+(MAX-1)+".");
+  }
+
+  else if(op==="display"){
+    arrOpName="DISPLAY";
+    if(front===-1){
+      arrayMessage("Queue is empty.");
+    }else{
+      const values=[];
+      for(let i=front;i<=rear;i++) if(arr[i]!==null) values.push(arr[i]);
+      arrayMessage("Queue elements: "+values.join(" → "));
+    }
+  }
+
+  arrayRender();
+}
+
+function arrayReset(){
+  arr=new Array(MAX).fill(null);
+  front=-1;rear=-1;arrOpName="RESET";
+  arrayMessage("Queue reset. The next ENQUEUE will make FRONT = REAR = 0.");
+  arrayRender();
+}
+
+document.getElementById("arrValue").addEventListener("keydown",e=>{
+  if(e.key==="Enter") arrayApply();
+});
+arrayRender();
+
+/* ---------- LINKED LIST QUEUE ---------- */
+let ll=[];
+let llCurrent="START";
+
+function llRender(){
+  const box=document.getElementById("llVisual");
+  box.innerHTML="";
+
+  if(ll.length===0){
+    const e=document.createElement("div");
+    e.style.cssText="padding:22px 35px;border:2px dashed #aeb9c7;border-radius:8px;color:#64748b;font-weight:700";
+    e.textContent="Queue is Empty";
+    box.appendChild(e);
+  }else{
+    ll.forEach((v,i)=>{
+      const wrap=document.createElement("div");
+      wrap.className="llwrap";
+
+      const node=document.createElement("div");
+      node.className="llnode";
+      node.innerHTML='<div class="data">'+v+'</div><div class="next">'+(i===ll.length-1?"NULL":"•")+'</div>';
+
+      if(i===0){
+        const t=document.createElement("div");
+        t.className="lltag front";
+        t.textContent="FRONT ↓";
+        wrap.appendChild(t);
+      }
+
+      if(i===ll.length-1){
+        const t=document.createElement("div");
+        t.className="lltag rear";
+        t.textContent="REAR ↓";
+        wrap.appendChild(t);
+      }
+
+      wrap.appendChild(node);
+      box.appendChild(wrap);
+
+      if(i<ll.length-1){
+        const a=document.createElement("div");
+        a.className="llarrow";
+        a.textContent="→";
+        box.appendChild(a);
+      }
+    });
+  }
+
+  document.getElementById("llCurrent").textContent=llCurrent;
+  document.getElementById("llFront").textContent=ll.length?ll[0]:"NULL";
+  document.getElementById("llRear").textContent=ll.length?ll[ll.length-1]:"NULL";
+}
+
+function llMessage(t){document.getElementById("llMsg").textContent=t}
+
+function llApply(){
+  const op=document.getElementById("llOp").value;
+
+  if(op==="enqueue"){
+    const raw=document.getElementById("llValue").value.trim();
+    if(raw===""){llMessage("Enter a value for ENQUEUE.");return}
+
+    const v=Number(raw);
+    ll.push(v);
+    llCurrent="ENQUEUE("+v+")";
+    llMessage(
+      ll.length===1
+      ? v+" created the first node. FRONT and REAR both point to it."
+      : v+" inserted after the old REAR. REAR now points to "+v+"."
+    );
+    document.getElementById("llValue").value="";
+  }
+
+  else if(op==="dequeue"){
+    if(ll.length===0){
+      llCurrent="DEQUEUE";
+      llMessage("Queue Underflow: cannot dequeue from an empty queue.");
+      llRender();return;
+    }
+
+    const removed=ll.shift();
+    llCurrent="DEQUEUE";
+    llMessage(
+      removed+" removed from FRONT. "+
+      (ll.length===0 ? "The queue is now empty, so FRONT = REAR = NULL." :
+      "FRONT moves to the next node.")
+    );
+  }
+
+  else if(op==="peek"){
+    llCurrent="PEEK";
+    llMessage(
+      ll.length ? "FRONT element = "+ll[0]+". The node is not removed." :
+      "Queue is empty."
+    );
+  }
+
+  else if(op==="frontValue"){
+    llCurrent="FRONT";
+    llMessage(ll.length ? "FRONT = "+ll[0]+". The first node is the FRONT." : "Queue is empty. FRONT = NULL.");
+  }
+
+  else if(op==="rearValue"){
+    llCurrent="REAR";
+    llMessage(ll.length ? "REAR = "+ll[ll.length-1]+". The last node is the REAR." : "Queue is empty. REAR = NULL.");
+  }
+
+  else if(op==="isempty"){
+    llCurrent="ISEMPTY()";
+    llMessage("ISEMPTY() = "+(ll.length===0?"TRUE":"FALSE")+".");
+  }
+
+  else if(op==="isfull"){
+    llCurrent="ISFULL()";
+    llMessage("For a linked-list queue there is no fixed capacity. ISFULL() is normally not required; allocation failure is the practical limit.");
+  }
+
+  else{
+    llCurrent="DISPLAY";
+    llMessage(ll.length ? "Queue: "+ll.join(" → ")+" → NULL" : "Queue is empty.");
+  }
+
+  llRender();
+}
+
+function llReset(){
+  ll=[];llCurrent="RESET";
+  llMessage("Queue reset. The first ENQUEUE will create the first node.");
+  llRender();
+}
+
+document.getElementById("llValue").addEventListener("keydown",e=>{
+  if(e.key==="Enter") llApply();
+});
+llRender();
+
+
+/* ---------- QUEUE VS STACK LIVE DEMO ---------- */
+let stackValues=[10,20,30];
+let queueValues=[10,20,30];
+
+function renderCompare(){
+  const s=document.getElementById("liveStack");
+  const q=document.getElementById("liveQueue");
+  const topLabel=document.getElementById("stackTopLabel");
+  s.innerHTML="";
+  q.innerHTML="";
+
+  if(stackValues.length===0){
+    s.innerHTML='<div style="padding:25px;border:2px dashed #b7c2d0;color:#64748b;font-weight:800">STACK EMPTY</div>';
+    topLabel.textContent="TOP = EMPTY";
+  }else{
+    topLabel.textContent="TOP = "+stackValues[stackValues.length-1];
+    [...stackValues].reverse().forEach(v=>{
+      const c=document.createElement("div");
+      c.className="stack-cell";
+      c.textContent=v;
+      s.appendChild(c);
+    });
+  }
+
+  if(queueValues.length===0){
+    q.innerHTML='<div style="padding:25px;border:2px dashed #b7c2d0;color:#64748b;font-weight:800">QUEUE EMPTY</div>';
+  }else{
+    queueValues.forEach((v,i)=>{
+      const c=document.createElement("div");
+      c.className="qcell";
+      c.textContent=v;
+
+      if(i===0){
+        const t=document.createElement("span");
+        t.className="qtag f";
+        t.textContent="FRONT ↓";
+        c.appendChild(t);
+      }
+
+      if(i===queueValues.length-1){
+        const t=document.createElement("span");
+        t.className="qtag r";
+        t.textContent="REAR ↓";
+        c.appendChild(t);
+      }
+
+      q.appendChild(c);
+    });
+  }
+}
+
+function compareAdd(){
+  const input=document.getElementById("compareValue");
+  const raw=input.value.trim();
+
+  if(raw===""){
+    document.getElementById("compareMsg").textContent="Enter a value first, for example 40.";
+    return;
+  }
+
+  const value=Number(raw);
+  stackValues.push(value);
+  queueValues.push(value);
+
+  document.getElementById("compareMsg").textContent=
+    value+" added: Stack → TOP, Queue → REAR.";
+
+  input.value="";
+  renderCompare();
+}
+
+function compareRemoveStack(){
+  if(stackValues.length===0){
+    document.getElementById("compareMsg").textContent="Stack Underflow: the Stack is empty.";
+    return;
+  }
+
+  const removed=stackValues.pop();
+
+  document.getElementById("compareMsg").textContent=
+    "STACK REMOVE: "+removed+" was removed from TOP. Queue was not changed.";
+
+  renderCompare();
+}
+
+function compareRemoveQueue(){
+  if(queueValues.length===0){
+    document.getElementById("compareMsg").textContent="Queue Underflow: the Queue is empty.";
+    return;
+  }
+
+  const removed=queueValues.shift();
+
+  document.getElementById("compareMsg").textContent=
+    "QUEUE REMOVE: "+removed+" was removed from FRONT. Stack was not changed.";
+
+  renderCompare();
+}
+
+function compareReset(){
+  stackValues=[10,20,30];
+  queueValues=[10,20,30];
+
+  document.getElementById("compareMsg").textContent=
+    "Reset: Stack and Queue both contain 10, 20, 30. Try removing from each one.";
+
+  renderCompare();
+}
+
+document.getElementById("compareValue").addEventListener("keydown",e=>{
+  if(e.key==="Enter") compareAdd();
+});
+
+renderCompare();
+
+/* ---------- FULLY INTERACTIVE QUEUE TYPES ---------- */
+let priorityType = [
+  {name:"Job A", p:1},
+  {name:"Job B", p:3},
+  {name:"Job C", p:2}
+];
+
+let dequeType = [10,20,30];
+
+function typeStatusCard(label,value,cls=""){
+  return '<div class="type-status-card '+cls+'"><small>'+label+'</small><strong>'+value+'</strong></div>';
+}
+
+function setTypeStatus(cards){
+  document.getElementById("typeStatus").innerHTML=cards.join("");
+}
+
+function setTypeResult(text){
+  document.getElementById("typeResult").textContent=text;
+}
+
+/* ---------- LINEAR QUEUE ---------- */
+let linearType = [10,20,30,40,null];
+let linearFrontIndex = 0;
+let linearRearIndex = 3;
+
+function renderLinearType(){
+  document.getElementById("typeTitle").textContent="Linear Queue";
+  document.getElementById("typeDesc").textContent=
+    "ENQUEUE at REAR and DEQUEUE from FRONT. In a linear queue, REAR moves only forward.";
+
+  const count=linearType.filter(v=>v!==null).length;
+
+  setTypeStatus([
+    typeStatusCard("FRONT",count===0?"EMPTY":"Index "+linearFrontIndex),
+    typeStatusCard("REAR",count===0?"EMPTY":"Index "+linearRearIndex),
+    typeStatusCard("SIZE",count+" / 5"),
+    typeStatusCard("ISEMPTY",count===0?"TRUE":"FALSE")
+  ]);
+
+  const visual=document.getElementById("typeVisual");
+  visual.innerHTML="";
+
+  const wrap=document.createElement("div");
+  wrap.className="type-linear-wrap";
+
+  const array=document.createElement("div");
+  array.className="type-linear-array";
+
+  linearType.forEach((v,i)=>{
+    const cell=document.createElement("div");
+    cell.className="type-linear-cell"+(v===null?" empty":"");
+    cell.textContent=v===null?"":v;
+
+    if(v!==null && i===linearFrontIndex){
+      const p=document.createElement("span");
+      p.className="tptr tf";
+      p.textContent="FRONT ↓";
+      cell.appendChild(p);
+    }
+
+    if(v!==null && i===linearRearIndex){
+      const p=document.createElement("span");
+      p.className="tptr tr";
+      p.textContent="REAR ↓";
+      cell.appendChild(p);
+    }
+
+    array.appendChild(cell);
+  });
+
+  wrap.appendChild(array);
+  visual.appendChild(wrap);
+
+  document.getElementById("typeActions").innerHTML=`
+    <input id="linearInput" type="number" placeholder="Value" style="width:105px">
+    <button class="green" onclick="linearEnqueue()">ENQUEUE</button>
+    <button class="red" onclick="linearDequeue()">DEQUEUE</button>
+    <button class="blue" onclick="linearFront()">FRONT</button>
+    <button class="maroon" onclick="linearRear()">REAR</button>
+    <button class="gray" onclick="linearReset()">RESET</button>`;
+
+  setTypeResult(
+    count===0
+      ? "Queue is empty. Enter a value and click ENQUEUE."
+      : "Current queue: "+linearType.filter(v=>v!==null).join(" → ")
+  );
+}
+
+function linearEnqueue(){
+  const input=document.getElementById("linearInput");
+  if(!input || input.value.trim()===""){
+    setTypeResult("Enter a value before ENQUEUE.");
+    return;
+  }
+
+  const value=Number(input.value);
+
+  /* Linear queue cannot reuse cells before FRONT. */
+  if(linearRearIndex >= linearType.length-1){
+    setTypeResult(
+      "Queue Overflow: REAR has reached index 4. " +
+      "The empty cells before FRONT cannot be reused in a linear queue."
+    );
+    renderLinearType();
+    return;
+  }
+
+  if(linearType.every(v=>v===null)){
+    linearFrontIndex=0;
+    linearRearIndex=0;
+  }else{
+    linearRearIndex++;
+  }
+
+  linearType[linearRearIndex]=value;
+  input.value="";
+
+  setTypeResult(
+    value+" inserted at REAR (index "+linearRearIndex+")."
+  );
+
+  renderLinearType();
+}
+
+function linearDequeue(){
+  if(linearType.every(v=>v===null)){
+    setTypeResult("Queue Underflow: queue is empty.");
+    renderLinearType();
+    return;
+  }
+
+  const removed=linearType[linearFrontIndex];
+  linearType[linearFrontIndex]=null;
+
+  if(linearFrontIndex===linearRearIndex){
+    linearFrontIndex=0;
+    linearRearIndex=-1;
+  }else{
+    linearFrontIndex++;
+  }
+
+  setTypeResult(
+    removed+" removed from FRONT. FRONT moves forward."
+  );
+
+  renderLinearType();
+}
+
+function linearFront(){
+  if(linearRearIndex===-1){
+    setTypeResult("Queue is empty.");
+  }else{
+    setTypeResult(
+      "FRONT element = "+linearType[linearFrontIndex]+
+      " at index "+linearFrontIndex+"."
+    );
+  }
+  renderLinearType();
+}
+
+function linearRear(){
+  if(linearRearIndex===-1){
+    setTypeResult("Queue is empty.");
+  }else{
+    setTypeResult(
+      "REAR element = "+linearType[linearRearIndex]+
+      " at index "+linearRearIndex+"."
+    );
+  }
+  renderLinearType();
+}
+
+function linearReset(){
+  linearType=[10,20,30,40,null];
+  linearFrontIndex=0;
+  linearRearIndex=3;
+  setTypeResult("Linear Queue reset. The next ENQUEUE will insert at index 4.");
+  renderLinearType();
+}
+
+/* ---------- CIRCULAR QUEUE ---------- */
+const CIRC_MAX=4;
+let circularType=[10,20,30,null];
+let circularFront=0;
+let circularRear=2;
+let circularCount=3;
+
+function renderCircularType(){
+  document.getElementById("typeTitle").textContent="Circular Queue";
+  document.getElementById("typeDesc").textContent=
+    "REAR wraps around to the beginning when a free position is available.";
+
+  setTypeStatus([
+    typeStatusCard("FRONT",circularCount===0?"EMPTY":circularFront),
+    typeStatusCard("REAR",circularCount===0?"EMPTY":circularRear),
+    typeStatusCard("SIZE",circularCount+" / "+CIRC_MAX),
+    typeStatusCard("ISFULL",circularCount===CIRC_MAX?"TRUE":"FALSE")
+  ]);
+
+  const visual=document.getElementById("typeVisual");
+  visual.innerHTML=`
+    <div class="type-circular-board">
+      <svg viewBox="0 0 330 250" aria-hidden="true">
+        <defs>
+          <marker id="cArrowFixed" markerWidth="9" markerHeight="9"
+                  refX="7" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 z" fill="#68192a"></path>
+          </marker>
+        </defs>
+        <path d="M195 28 C250 34 286 62 298 105"
+              fill="none" stroke="#68192a" stroke-width="3"
+              marker-end="url(#cArrowFixed)"/>
+        <path d="M298 145 C286 188 250 216 195 222"
+              fill="none" stroke="#68192a" stroke-width="3"
+              marker-end="url(#cArrowFixed)"/>
+        <path d="M135 222 C80 216 44 188 32 145"
+              fill="none" stroke="#68192a" stroke-width="3"
+              marker-end="url(#cArrowFixed)"/>
+        <path d="M32 105 C44 62 80 34 135 28"
+              fill="none" stroke="#68192a" stroke-width="3"
+              marker-end="url(#cArrowFixed)"/>
+      </svg>
+
+      <div class="cnode c0 ${circularType[0]===null?"empty":""}">
+        ${circularType[0]===null?"":circularType[0]}
+      </div>
+      <div class="cnode c1 ${circularType[1]===null?"empty":""}">
+        ${circularType[1]===null?"":circularType[1]}
+      </div>
+      <div class="cnode c2 ${circularType[2]===null?"empty":""}">
+        ${circularType[2]===null?"":circularType[2]}
+      </div>
+      <div class="cnode c3 ${circularType[3]===null?"empty":""}">
+        ${circularType[3]===null?"":circularType[3]}
+      </div>
+    </div>`;
+
+  const nodes=visual.querySelectorAll(".cnode");
+
+  if(circularCount>0){
+    const f=document.createElement("span");
+    f.className="cptr frontptr";
+    f.textContent="FRONT ↓";
+    nodes[circularFront].appendChild(f);
+
+    const r=document.createElement("span");
+    r.className="cptr rearptr";
+    r.textContent="REAR ↓";
+    nodes[circularRear].appendChild(r);
+  }
+
+  document.getElementById("typeActions").innerHTML=`
+    <input id="circularInput" type="number" placeholder="Value" style="width:105px">
+    <button class="green" onclick="circularEnqueue()">ENQUEUE</button>
+    <button class="red" onclick="circularDequeue()">DEQUEUE</button>
+    <button class="blue" onclick="circularFrontOp()">FRONT</button>
+    <button class="maroon" onclick="circularRearOp()">REAR</button>
+    <button class="gray" onclick="circularReset()">RESET</button>`;
+
+  const values=circularQueueValues();
+
+  setTypeResult(
+    circularCount===0
+      ? "Circular Queue is empty."
+      : "Queue order: "+values.join(" → ")
+  );
+}
+
+function circularQueueValues(){
+  if(circularCount===0) return [];
+
+  const out=[];
+  let index=circularFront;
+
+  for(let k=0;k<circularCount;k++){
+    out.push(circularType[index]);
+    index=(index+1)%CIRC_MAX;
+  }
+
+  return out;
+}
+
+function circularEnqueue(){
+  const input=document.getElementById("circularInput");
+
+  if(!input || input.value.trim()===""){
+    setTypeResult("Enter a value before ENQUEUE.");
+    return;
+  }
+
+  if(circularCount===CIRC_MAX){
+    setTypeResult("Circular Queue Overflow: the queue is full.");
+    renderCircularType();
+    return;
+  }
+
+  const value=Number(input.value);
+
+  /* This is the important circular behavior:
+     REAR moves using modulo, so it can return to index 0. */
+  circularRear=(circularRear+1)%CIRC_MAX;
+  circularType[circularRear]=value;
+  circularCount++;
+
+  if(circularCount===1){
+    circularFront=circularRear;
+  }
+
+  input.value="";
+
+  setTypeResult(
+    value+" inserted at REAR index "+circularRear+
+    ". REAR can wrap around because this is a circular queue."
+  );
+
+  renderCircularType();
+}
+
+function circularDequeue(){
+  if(circularCount===0){
+    setTypeResult("Queue Underflow: Circular Queue is empty.");
+    renderCircularType();
+    return;
+  }
+
+  const removed=circularType[circularFront];
+  circularType[circularFront]=null;
+
+  if(circularCount===1){
+    circularCount=0;
+    circularFront=0;
+    circularRear=3;
+  }else{
+    circularFront=(circularFront+1)%CIRC_MAX;
+    circularCount--;
+  }
+
+  setTypeResult(
+    removed+" removed from FRONT. FRONT moves circularly."
+  );
+
+  renderCircularType();
+}
+
+function circularFrontOp(){
+  setTypeResult(
+    circularCount===0
+      ? "Circular Queue is empty."
+      : "FRONT element = "+circularType[circularFront]+
+        " at index "+circularFront+"."
+  );
+  renderCircularType();
+}
+
+function circularRearOp(){
+  setTypeResult(
+    circularCount===0
+      ? "Circular Queue is empty."
+      : "REAR element = "+circularType[circularRear]+
+        " at index "+circularRear+"."
+  );
+  renderCircularType();
+}
+
+function circularReset(){
+  circularType=[10,20,30,null];
+  circularFront=0;
+  circularRear=2;
+  circularCount=3;
+  setTypeResult(
+    "Circular Queue reset. DEQUEUE then ENQUEUE to observe REAR wrapping to index 0."
+  );
+  renderCircularType();
+}
+
+/* ---------- PRIORITY QUEUE ---------- */
+function renderPriorityType(){
+  document.getElementById("typeTitle").textContent="Priority Queue";
+  document.getElementById("typeDesc").textContent=
+    "The next element is selected by priority, not simply by arrival time. Smaller priority number = higher priority.";
+
+  const sorted=[...priorityType].sort((a,b)=>a.p-b.p);
+  setTypeStatus([
+    typeStatusCard("NEXT",sorted.length?sorted[0].name:"EMPTY"),
+    typeStatusCard("HIGHEST PRIORITY",sorted.length?sorted[0].p:"—"),
+    typeStatusCard("SIZE",sorted.length),
+    typeStatusCard("ISEMPTY",sorted.length===0?"TRUE":"FALSE")
+  ]);
+
+  const visual=document.getElementById("typeVisual");
+  visual.innerHTML="";
+  const board=document.createElement("div");
+  board.className="priority-board";
+
+  sorted.forEach((item,i)=>{
+    const box=document.createElement("div");
+    box.className="pitem"+(i===0?" serving":"");
+    box.innerHTML='<div class="pname">'+item.name+'</div><div class="pval">Priority '+item.p+'</div>';
+    board.appendChild(box);
+  });
+
+  if(!sorted.length){
+    board.innerHTML='<div class="type-empty">Priority Queue is empty</div>';
+  }
+  visual.appendChild(board);
+
+  document.getElementById("typeActions").innerHTML=`
+    <button class="green" onclick="priorityAdd()">ADD JOB</button>
+    <button class="red" onclick="priorityServe()">SERVE HIGHEST PRIORITY</button>
+    <button class="gray" onclick="priorityReset()">RESET</button>`;
+
+  setTypeResult(
+    sorted.length
+    ? sorted[0].name+" will be served next because it has the highest priority."
+    : "Priority Queue is empty."
+  );
+}
+
+function priorityAdd(){
+  const nextNo=priorityType.length+1;
+  const p=(nextNo%4)+1;
+  priorityType.push({name:"Job "+String.fromCharCode(64+nextNo),p:p});
+  setTypeResult("New job added with priority "+p+".");
+  renderPriorityType();
+}
+function priorityServe(){
+  if(!priorityType.length){setTypeResult("Priority Queue is empty.");renderPriorityType();return}
+  priorityType.sort((a,b)=>a.p-b.p);
+  const served=priorityType.shift();
+  setTypeResult(served.name+" served first because its priority is "+served.p+".");
+  renderPriorityType();
+}
+function priorityReset(){
+  priorityType=[
+    {name:"Job A",p:1},
+    {name:"Job B",p:3},
+    {name:"Job C",p:2}
+  ];
+  setTypeResult("Priority Queue reset.");
+  renderPriorityType();
+}
+
+/* ---------- DEQUE ---------- */
+function renderDequeType(){
+  document.getElementById("typeTitle").textContent="Deque — Double Ended Queue";
+  document.getElementById("typeDesc").textContent=
+    "Insertion and deletion are possible at both FRONT and REAR.";
+
+  setTypeStatus([
+    typeStatusCard("FRONT",dequeType.length?dequeType[0]:"EMPTY"),
+    typeStatusCard("REAR",dequeType.length?dequeType[dequeType.length-1]:"EMPTY"),
+    typeStatusCard("SIZE",dequeType.length),
+    typeStatusCard("ISEMPTY",dequeType.length===0?"TRUE":"FALSE")
+  ]);
+
+  const visual=document.getElementById("typeVisual");
+  visual.innerHTML="";
+  const board=document.createElement("div");
+  board.className="deque-board";
+
+  if(!dequeType.length){
+    board.innerHTML='<div class="type-empty">Deque is empty</div>';
+  }else{
+    dequeType.forEach((v,i)=>{
+      const c=document.createElement("div");
+      c.className="deque-cell";
+      if(i===0){
+        c.classList.add("front-cell");
+        c.innerHTML='<span class="deque-pointer front">FRONT ↓</span>'+v;
+      }else if(i===dequeType.length-1){
+        c.classList.add("rear-cell");
+        c.innerHTML='<span class="deque-pointer rear">REAR ↓</span>'+v;
+      }else{
+        c.textContent=v;
+      }
+      board.appendChild(c);
+    });
+  }
+
+  visual.appendChild(board);
+
+  document.getElementById("typeActions").innerHTML=`
+    <input id="dequeInput" type="number" placeholder="Value" style="width:105px">
+    <button class="green" onclick="dequeInsertFront()">INSERT FRONT</button>
+    <button class="green" onclick="dequeInsertRear()">INSERT REAR</button>
+    <button class="red" onclick="dequeDeleteFront()">DELETE FRONT</button>
+    <button class="red" onclick="dequeDeleteRear()">DELETE REAR</button>
+    <button class="gray" onclick="dequeReset()">RESET</button>`;
+
+  setTypeResult(
+    dequeType.length
+    ? "Deque: "+dequeType.join(" ↔ ")
+    : "Deque is empty."
+  );
+}
+function getDequeInput(){
+  const input=document.getElementById("dequeInput");
+  if(!input || input.value.trim()===""){setTypeResult("Enter a value first.");return null}
+  const v=Number(input.value); input.value=""; return v;
+}
+function dequeInsertFront(){
+  const v=getDequeInput(); if(v===null)return;
+  dequeType.unshift(v);
+  setTypeResult(v+" inserted at FRONT.");
+  renderDequeType();
+}
+function dequeInsertRear(){
+  const v=getDequeInput(); if(v===null)return;
+  dequeType.push(v);
+  setTypeResult(v+" inserted at REAR.");
+  renderDequeType();
+}
+function dequeDeleteFront(){
+  if(!dequeType.length){setTypeResult("Deque is empty.");renderDequeType();return}
+  const v=dequeType.shift();
+  setTypeResult(v+" deleted from FRONT.");
+  renderDequeType();
+}
+function dequeDeleteRear(){
+  if(!dequeType.length){setTypeResult("Deque is empty.");renderDequeType();return}
+  const v=dequeType.pop();
+  setTypeResult(v+" deleted from REAR.");
+  renderDequeType();
+}
+function dequeReset(){
+  dequeType=[10,20,30];
+  setTypeResult("Deque reset.");
+  renderDequeType();
+}
+
+function showQueueType(type,btn){
+  document.querySelectorAll(".type-tab").forEach(b=>b.classList.remove("active"));
+  if(btn) btn.classList.add("active");
+
+  if(type==="linear") renderLinearType();
+  if(type==="circular") renderCircularType();
+  if(type==="priority") renderPriorityType();
+  if(type==="deque") renderDequeType();
+}
+
+showQueueType("linear",document.querySelector(".type-tab"));
+
+document.addEventListener("keydown", function(e){
+  if(e.key !== "Enter") return;
+  const li=document.getElementById("linearInput");
+  const ci=document.getElementById("circularInput");
+  if(document.activeElement===li) linearEnqueue();
+  if(document.activeElement===ci) circularEnqueue();
+});
+
+
+/* ---------- QUEUE USING TWO STACKS ---------- */
+let q2sStack1 = [];
+let q2sStack2 = [];
+
+function q2sQueueState(){
+  return q2sStack2.slice().reverse().concat(q2sStack1);
+}
+
+function q2sRender(){
+  const s1=document.getElementById("q2sS1");
+  const s2=document.getElementById("q2sS2");
+  const q=document.getElementById("q2sQueue");
+  s1.innerHTML = q2sStack1.length
+    ? '<div class="q2s-top">TOP ↓</div>'+q2sStack1.slice().reverse().map(v=>'<div class="q2s-cell">'+v+'</div>').join('')
+    : '<div style="color:#64748b;font-weight:800">EMPTY</div>';
+  s2.innerHTML = q2sStack2.length
+    ? '<div class="q2s-top">TOP ↓</div>'+q2sStack2.slice().reverse().map(v=>'<div class="q2s-cell">'+v+'</div>').join('')
+    : '<div style="color:#64748b;font-weight:800">EMPTY</div>';
+
+  const arr=q2sQueueState();
+  q.innerHTML = arr.length
+    ? arr.map((v,i)=>{
+        const cls=(i===0?'front ':'')+(i===arr.length-1?'rear':'');
+        const ptr=i===0?'<span class="q2s-pointer front">FRONT ↓</span>':(i===arr.length-1?'<span class="q2s-pointer rear">REAR ↓</span>':'');
+        return '<div class="q2s-qcell '+cls+'">'+ptr+v+'</div>';
+      }).join('')
+    : '<div style="color:#64748b;font-weight:800">QUEUE EMPTY</div>';
+
+  document.getElementById("q2sFront").textContent=arr.length?arr[0]:"NULL";
+  document.getElementById("q2sRear").textContent=arr.length?arr[arr.length-1]:"NULL";
+  document.getElementById("q2sSize1").textContent=q2sStack1.length;
+  document.getElementById("q2sSize2").textContent=q2sStack2.length;
+}
+
+function q2sMsg(t){document.getElementById("q2sMsg").textContent=t}
+
+function q2sApply(){
+  const op=document.getElementById("q2sOp").value;
+  const input=document.getElementById("q2sValue");
+  if(op==="enqueue"){
+    if(input.value.trim()===""){q2sMsg("Enter a value to ENQUEUE.");return;}
+    const v=Number(input.value);
+    q2sStack1.push(v);
+    input.value="";
+    q2sMsg(v+" inserted into Stack 1. It joins the REAR of the queue.");
+  }
+  else if(op==="dequeue"){
+    if(q2sStack2.length===0){
+      if(q2sStack1.length===0){q2sMsg("Queue Underflow: the queue is empty.");q2sRender();return;}
+      while(q2sStack1.length) q2sStack2.push(q2sStack1.pop());
+      q2sMsg("Stack 2 was empty, so elements were transferred from Stack 1 to Stack 2. The oldest element is now on TOP.");
+    }
+    const v=q2sStack2.pop();
+    q2sMsg(v+" removed from FRONT using Stack 2.");
+  }
+  else if(op==="front"){
+    if(q2sStack2.length===0){
+      if(q2sStack1.length===0){q2sMsg("Queue is empty.");q2sRender();return;}
+      while(q2sStack1.length) q2sStack2.push(q2sStack1.pop());
+      q2sMsg("Stack 2 was prepared to expose the FRONT element.");
+    }else{
+      q2sMsg("FRONT element is "+q2sStack2[q2sStack2.length-1]+". No element was removed.");
+    }
+  }
+  else if(op==="isempty"){
+    q2sMsg((q2sStack1.length===0 && q2sStack2.length===0)?"ISEMPTY() → TRUE":"ISEMPTY() → FALSE");
+  }
+  else if(op==="display"){
+    const arr=q2sQueueState();
+    q2sMsg(arr.length?"Queue: "+arr.join(" → "):"Queue is empty.");
+  }
+  q2sRender();
+}
+
+function q2sReset(){
+  q2sStack1=[]; q2sStack2=[];
+  q2sMsg("Queue reset. Both stacks are empty.");
+  q2sRender();
+}
+
+q2sRender();
+
+/* Sidebar active state */
+const links=document.querySelectorAll(".sidebar a");
+const sections=document.querySelectorAll("section[id]");
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      links.forEach(a=>a.classList.remove("active"));
+      const link=document.querySelector('.sidebar a[href="#'+entry.target.id+'"]');
+      if(link) link.classList.add("active");
+    }
+  });
+},{rootMargin:"-15% 0px -70% 0px"});
+sections.forEach(s=>observer.observe(s));
+</script>
+
+</body>
+</html>
